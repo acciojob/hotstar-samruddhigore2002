@@ -2,6 +2,7 @@ package com.driver.services;
 
 
 import com.driver.EntryDto.SubscriptionEntryDto;
+import com.driver.exception.NoUserFoundException;
 import com.driver.model.Subscription;
 import com.driver.model.SubscriptionType;
 import com.driver.model.User;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SubscriptionService {
@@ -26,7 +28,39 @@ public class SubscriptionService {
 
         //Save The subscription Object into the Db and return the total Amount that user has to pay
 
-        return null;
+        Optional<User> optionalUser = userRepository.findById(subscriptionEntryDto.getUserId());
+        if(!optionalUser.isPresent()){
+            throw new NoUserFoundException("User does not exists");
+        }
+
+
+        Subscription subscription = new Subscription();
+        subscription.setSubscriptionType(subscriptionEntryDto.getSubscriptionType());
+        subscription.setNoOfScreensSubscribed(subscriptionEntryDto.getNoOfScreensRequired());
+        subscription.setUser(optionalUser.get());
+
+        int screens = subscriptionEntryDto.getNoOfScreensRequired();
+        int amount;
+        SubscriptionType type = subscriptionEntryDto.getSubscriptionType();
+
+        if(String.valueOf(type).equals("BASIC")){
+            amount = 500 + 200 * screens;
+        }
+        else if(String.valueOf(type).equals("PRO")){
+            amount = 800 + 250 * screens;
+        }
+        else{
+            amount = 1000 + 350 * screens;
+        }
+
+        subscription.setTotalAmountPaid(amount);
+        subscriptionRepository.save(subscription);
+
+        User user = optionalUser.get();
+        user.setSubscription(subscription);
+        userRepository.save(user);
+
+        return amount;
     }
 
     public Integer upgradeSubscription(Integer userId)throws Exception{
