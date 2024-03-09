@@ -28,6 +28,7 @@ public class SubscriptionService {
 
         //Save The subscription Object into the Db and return the total Amount that user has to pay
 
+        // check if user is present or not
         Optional<User> optionalUser = userRepository.findById(subscriptionEntryDto.getUserId());
         if(!optionalUser.isPresent()){
             throw new NoUserFoundException("User does not exists");
@@ -68,8 +69,43 @@ public class SubscriptionService {
         //If you are already at an ElITE subscription : then throw Exception ("Already the best Subscription")
         //In all other cases just try to upgrade the subscription and tell the difference of price that user has to pay
         //update the subscription in the repository
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if(!optionalUser.isPresent()){
+            throw  new RuntimeException("No user found");
+        }
 
-        return null;
+        User user = optionalUser.get();
+        SubscriptionType type = user.getSubscription().getSubscriptionType();
+
+        if(type == SubscriptionType.ELITE){
+            throw new Exception("Already the best Subscription");
+        }
+
+        Subscription subscription = user.getSubscription();
+        int screens = user.getSubscription().getNoOfScreensSubscribed();
+        int alreadyPaidAmount = subscription.getTotalAmountPaid();;
+        int amountToBePaid;
+        int diffInAmount;
+        if(type == SubscriptionType.BASIC){
+
+            // amount to be paid for an updated(PRO) subscription
+            amountToBePaid = 800 + 250 * screens;
+            subscription.setSubscriptionType(SubscriptionType.PRO);
+            subscription.setTotalAmountPaid(amountToBePaid);
+            diffInAmount = amountToBePaid - alreadyPaidAmount;
+
+
+        }else{
+            // amount to be paid for an updated(ELITE) subscription
+            amountToBePaid = 1000 + 350 * screens;
+            subscription.setSubscriptionType(SubscriptionType.ELITE);
+            subscription.setTotalAmountPaid(amountToBePaid);
+            diffInAmount = amountToBePaid - alreadyPaidAmount;
+        }
+
+        subscriptionRepository.save(subscription);
+        user.setSubscription(subscription);
+        return diffInAmount;
     }
 
     public Integer calculateTotalRevenueOfHotstar(){
