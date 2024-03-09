@@ -2,7 +2,6 @@ package com.driver.services;
 
 
 import com.driver.EntryDto.SubscriptionEntryDto;
-import com.driver.exception.NoUserFoundException;
 import com.driver.model.Subscription;
 import com.driver.model.SubscriptionType;
 import com.driver.model.User;
@@ -11,7 +10,6 @@ import com.driver.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +29,7 @@ public class SubscriptionService {
         // check if user is present or not
         Optional<User> optionalUser = userRepository.findById(subscriptionEntryDto.getUserId());
         if(!optionalUser.isPresent()){
-            throw new NoUserFoundException("User does not exists");
+            throw new RuntimeException("User does not exist");
         }
 
 
@@ -112,8 +110,13 @@ public class SubscriptionService {
 
         //We need to find out total Revenue of hotstar : from all the subscriptions combined
         //Hint is to use findAll function from the SubscriptionDb
+        List<Subscription> subscriptionList = subscriptionRepository.findAll();
 
-        return null;
+        int totalRevenue = 0;
+        for(Subscription sub: subscriptionList){
+            totalRevenue += sub.getTotalAmountPaid();
+        }
+        return totalRevenue;
     }
 
 }

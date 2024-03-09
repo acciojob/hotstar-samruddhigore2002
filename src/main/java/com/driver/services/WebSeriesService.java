@@ -1,8 +1,6 @@
 package com.driver.services;
 
 import com.driver.EntryDto.WebSeriesEntryDto;
-import com.driver.exception.NoProductionHouseFoundException;
-import com.driver.exception.WebSeriesAlreadyExistsException;
 import com.driver.model.ProductionHouse;
 import com.driver.model.WebSeries;
 import com.driver.repository.ProductionHouseRepository;
@@ -31,22 +29,31 @@ public class WebSeriesService {
 
 //        WebSeries foundWebSeries = webSeriesRepository.findBySeriesName(webSeriesEntryDto.getSeriesName());
 //        if(foundWebSeries.getSeriesName().equals(webSeriesEntryDto.getSeriesName())){
-//            throw new WebSeriesAlreadyExistsException("Series already present");
+//            throw new Exception("Series is already present");
 //        }
 
         Optional<ProductionHouse> optionalProductionHouse = productionHouseRepository.findById(webSeriesEntryDto.getProductionHouseId());
         if(!optionalProductionHouse.isPresent()){
-            throw new NoProductionHouseFoundException("No production house found by this name");
+            throw new RuntimeException("No production house found by this id");
         }
 
         WebSeries webSeries = new WebSeries(webSeriesEntryDto.getSeriesName(), webSeriesEntryDto.getAgeLimit(), webSeriesEntryDto.getRating(), webSeriesEntryDto.getSubscriptionType());
         webSeries.setProductionHouse(optionalProductionHouse.get());
+
         webSeriesRepository.save(webSeries);
 
         ProductionHouse productionHouse = optionalProductionHouse.get();
         List<WebSeries> webSeriesList = productionHouse.getWebSeriesList();
         webSeriesList.add(webSeries);
         productionHouse.setWebSeriesList(webSeriesList);
+
+        double updatedRatings = 0;
+        for(WebSeries w: productionHouse.getWebSeriesList()){
+            updatedRatings += w.getRating();
+        }
+        updatedRatings = updatedRatings/webSeriesList.size();
+
+        productionHouse.setRatings(updatedRatings);
         productionHouseRepository.save(productionHouse);
 
         return webSeries.getId();
